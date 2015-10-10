@@ -173,7 +173,8 @@ class DynDnsUpdater
 		{
 			if ($hostInfo['address'] == $ip)
 			{
-				echo "No update required: {$hostInfo['name']} ($ip)\n";
+				echo "nochg $ip";
+				//echo "No update required: {$hostInfo['name']} ($ip)\n";
 				return true;
 			}
 		
@@ -191,7 +192,8 @@ class DynDnsUpdater
 			$result = $this->cpanelRequest($updateParams);
 		
 			if ($result)
-				echo "Update successful: {$hostInfo['name']} ($ip)\n";
+				echo "good $ip";
+				//echo "Update successful: {$hostInfo['name']} ($ip)\n";
 			else
 				echo "Update failed: {$hostInfo['name']}\n";
 		}

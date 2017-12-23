@@ -15,15 +15,15 @@
 /***** Variables *****/
 #The username and password used by the updater to send the request.
 #HTTP Basic authentication
-$php_auth_user='username';
-$php_auth_pw='password';
+$php_auth_user='CHOOSEAUSERNAME';
+$php_auth_pw='CHOOSEAPASSWORD';
 
 #The url of the cpanel server
 $dyndnsCpanel = 'https://example.com:2083';
 
 #username and password used to login to cpanel
-$dyndnsCpanelUser = 'username';
-$dyndnsCpanelPass = 'password';
+$dyndnsCpanelUser = 'CPANELUSERNAMEHERE';
+$dyndnsCpanelPass = 'CPANELPASSWORDHERE';
 
 #the main domain name of the account on cpanel
 $dyndnsDomain = 'example.com';
@@ -31,12 +31,20 @@ $dyndnsDomain = 'example.com';
 #the base domain of which the subdomain has a dynamic ip
 $dyndnsRemoteHostDomain = '.example.com.';
 
+#Pushover
+$userkey = 'USERKEYHERE';
+$appkey = 'APPKEYHERE';
+$priority = '-2';
+
+
 // Plain text output
 header('Content-type: text/plain');
+//header('user-agent: pm AppleWebKit Android');
+//ini_set("user_agent","pm AppleWebKit Android");
 
 
 if (!isset($_SERVER['PHP_AUTH_USER'])) {
-    header('WWW-Authenticate: Basic realm="CPanel DynDyns"');
+    header('WWW-Authenticate: Basic realm="DynDyns Service"');
     header('HTTP/1.0 401 Unauthorized');
     die('Authentication Required.');
 }
@@ -85,6 +93,7 @@ $dyn->updateHost($_GET['hostname'], $ip);
 if ($dyn->apiCallTime > 0.0)
 {
 	echo "\nTotal cPanel API call time: {$dyn->apiCallTime} seconds\n";
+	//echo PushNotify("Done",$appkey,$userkey);
 }
 
 // End of processing
@@ -93,6 +102,33 @@ exit;
 /**********************************/
 /*** Function definitions below ***/
 /**********************************/
+
+	/***** Pushover *****/
+
+	function PushNotify($body)
+	{
+		// Set variables
+		global $appkey,$userkey;
+		$options = array(
+		  'message' => isset($body) ? $body : false,
+		  'token' => isset($appkey) ? $appkey : false,
+		  'user' => isset($userkey) ? $userkey : false,
+		  'priority' => isset($priority) ? $priority : false
+		);
+		// Remove empty values
+		$options = array_filter($options);
+
+		// Do Pushover curl
+		curl_setopt_array($ch = curl_init(), array(
+		  CURLOPT_URL => "https://api.pushover.net/1/messages.json",
+		  CURLOPT_POSTFIELDS => $options
+		));
+		//echo $appkey;
+		curl_exec($ch);
+		curl_close($ch);
+		return $body;
+	}
+
 
 class DynDnsUpdater
 {
@@ -104,6 +140,8 @@ class DynDnsUpdater
 	private $cpanelPassword;
 	private $domain;
 	private $hostDomain;
+
+
 
 
 	/***** Constructor / Destructor *****/
@@ -173,7 +211,9 @@ class DynDnsUpdater
 		{
 			if ($hostInfo['address'] == $ip)
 			{
-				echo "No update required: {$hostInfo['name']} ($ip)\n";
+				echo "nochg $ip";
+				//PushNotify("No update required: {$hostInfo['name']} ($ip)");
+				//echo "No update required: {$hostInfo['name']} ($ip)\n";
 				return true;
 			}
 		
@@ -190,10 +230,14 @@ class DynDnsUpdater
         
 			$result = $this->cpanelRequest($updateParams);
 		
-			if ($result)
-				echo "Update successful: {$hostInfo['name']} ($ip)\n";
-			else
+			if ($result) {
+				echo "good $ip\n";
+				PushNotify("DDNS change: {$hostInfo['name']} ($ip)");
+				//echo "Update successful: {$hostInfo['name']} ($ip)\n";
+				}
+			else {
 				echo "Update failed: {$hostInfo['name']}\n";
+				}
 		}
 	}
 	
